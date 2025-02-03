@@ -1,0 +1,157 @@
+
+--------------*CREAT CALENDER (DAX)
+
+Calendar = 
+	ADDCOLUMNS(CALENDAR("01/01/"&[Pre_Year],"31/12/"&[Curr_Year]),
+	"Year",YEAR([Date]),
+	"Month",FORMAT([Date],"mmm"),
+	"Month-Yr",FORMAT([Date],"mmm-yy"),
+	"Day",FORMAT([Date],"ddd"),
+	"MonthIndex",MONTH([Date]),
+	"Quater","Q"&QUARTER([Date]))
+
+Calendar = ADDCOLUMNS(
+    	CALENDAR(
+       	DATE([Pre_Year], 1, 1),
+        	DATE([Curr_Year], [Curr_Month], DAY(EOMONTH(DATE([Curr_Year], [Curr_Month], 1), 0))) -- End date
+   		 ),
+    "Year", YEAR([Date]),
+    "Month", FORMAT([Date], "mmm"),
+    "Month-Yr", FORMAT([Date], "mmm-yy"),
+    "Day", FORMAT([Date], "ddd"),
+    "MonthIndex", MONTH([Date]),
+    "Quarter", "Q" & QUARTER([Date])
+)
+
+
+
+---------------*NEW TABLE " AUTO_DATE
+ 
+	AUTO_DATE = DATATABLE("OPTIONS",STRING, {{"ENABLE"},{"DISABLE"}})  ---creating button to select between auto-date and default date 		       
+	
+	AUTO_DATE = DATATABLE("OPTIONS",STRING, {{"⬤"}})   	
+
+
+--------------*NEW TABLE "Configuration" 
+	
+	Measure names inside configuration  - 1)Curr_year, 2) Pre_Year, 3)System_Date, 4) Selected_AutoDate_options
+
+	Curr_Year = Curr_Year = ( var yr = 2024
+			var Sys_Yr = YEAR([System_Date])                         
+			var Selected_option = [Selected_AutoDate_Options]
+			RETURN if(Selected_option="ENABLE",Sys_Yr,yr))
+
+	Curr_Year = ( var yr = 2024
+			var Sys_Yr = YEAR([System_Date])
+			RETURN if(ISFILTERED(AUTO_DATE[OPTIONS]),Sys_Yr,yr))
+		          		
+	Pre_Year = [Curr_Year] - 1
+
+	System_Date = NOW()	-----system current date				
+
+	Selected_AutoDate_Options  = SELECTEDVALUE(AUTO_DATE[OPTIONS])
+
+	YTDMonth = FORMAT([System_Date],"mmm")           ---name of system month
+	
+	YTDMonth = MONTH([System_Date])		      ----number of system month
+
+	YTDMonth = 
+		var SysMonth =  MONTH([System_Date])
+		var SelectYTDMonth = SELECTEDVALUE(Manual_Calender[MonthIndex])
+		RETURN SelectYTDMonth
+	YTDMonth = 
+		var SysMonth =  MONTH([System_Date])
+		var SelectYTDMonth = SELECTEDVALUE(Manual_Calender[MonthIndex])
+		RETURN if(ISFILTERED(AUTO_DATE[OPTIONS]),SysMonth,SelectYTDMonth)
+
+-------------*NEW TABLE  "Sales_Measures"
+	
+	Value = SUM(Master_Table[Value])
+	YTD = [Value]
+	
+	YTD = var YTDSysMonth = [YTDMonth] 
+		RETURN
+		CALCULATE([Value],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+	Period_Value = CALCULATE([Value],'Calendar'[MonthIndex]<=1)
+
+	Period_Value = var selected_Period = [Selected_Period]
+			RETURN
+			CALCULATE([Value],'Calendar'[MonthIndex]<=selected_Period)
+
+	Period_Value = 
+		var selected_Period = [Selected_Period]
+		var Period_Value = CALCULATE([Value],'Calendar'[MonthIndex]<=selected_Period)
+		RETURN if(selected_Period=0,[YTD],Period_Value)
+
+	Current_Year_Value = 
+		var Curryear = [Curr_Year]
+		RETURN
+		CALCULATE([Period_Value],'Calendar'[Year]=Curryear)
+
+	CY_PY_Growth% = DIVIDE([Current_Year_Value]-[Previous_Year_Value],[Previous_Year_Value])
+
+	Pos_Neg_Growth_Color = if([CY_PY_Growth%]>0,"Green","Red")
+	
+	Pos_Neg_Growth_BG_Color = if([CY_PY_Growth%]>0,"#C2F0C3","#F6D7D9")
+
+	Pos_Neg_Growth_txt_Color = if([CY_PY_Growth%]>0,"#035505","##DE6A73")
+
+	TopN_Area_by_Value = RANKX(ALL(Master_Table[area]),[Period_Value],,DESC)
+
+	TopN_Area_by_Value = 
+			var Rankvalue =  RANKX(ALL(Master_Table[area]),[Period_Value],,DESC)
+				RETURN IF(Rankvalue<=5,[Period_Value],BLANK())
+
+	TopN_Area_by_Value = 
+			var Rankvalue =  RANKX(ALL(Master_Table[area]),[Period_Value],,DESC)
+			var _rank = SELECTEDVALUE(Rank_Table[Value])
+			var rank_topN_Value =  IF(Rankvalue<=_rank,[Period_Value],BLANK())
+			RETURN IF(_rank = 0,[Period_Value],rank_topN_Value)
+
+-------------*NEW TABLE "Value_Options"
+	
+	Value_Options = SUMMARIZE(Master_Table,Master_Table[Value_Type])
+
+
+-------------*NEW TABLE Dynamic_Titles 
+
+	Sales_And_Year_Titles = SELECTEDVALUE(Value_Options[Value_Type])
+	
+	Sale_And_Year_Titles = [Selected_Sale_or_Quantity]
+	
+	Sale_And_Year_Titles = [Selected_Sale_or_Quantity]&" " [Curr_Year]
+
+	Sale_And_CY_Year_Titles = [Selected_Timeperiod_Label]&" "&[Selected_Sale_or_Quantity]&" "&[Curr_Year]
+	
+	Sale_And_PY_Year_Titles = [Selected_Timeperiod_Label]&" "&[Selected_Sale_or_Quantity]&" "&[Pre_Year]
+
+	Selected_Sale_or_Quantity = SELECTEDVALUE(Value_Options[Value_Type])
+	
+	Selected_Timeperiod_Label = SELECTEDVALUE(Time_Period[Options])
+
+	Sale_Option_CY_Year_Title = SELECTEDVALUE(Value_Options[Value_Type])&" "&Configuration[Curr_Year]
+
+ 	Date_Category_Selection = {
+   				 ("Month", NAMEOF('Calendar'[Month]), 0),
+    				("Month-Yr", NAMEOF('Calendar'[Month-Yr]), 1),
+    				("Quater", NAMEOF('Calendar'[Quater]), 2),
+    				("Day", NAMEOF('Calendar'[Day]), 3)
+			           }
+
+	Product_Rnk_Tiltle = SELECTEDVALUE(Rank_Table[Option])&" Products "& [Selected_Sale_or_Quantity]
+
+----------------Rank table
+	Rank_Table = 
+		DATATABLE
+			(
+   			 "Option",STRING,"Value",INTEGER,"Sort",INTEGER,
+   		 {
+       			 {"Default",0,0},
+        			{"Top 5",5,1},
+        			{"Top 10",10,2},
+        			{"Top 20",20,3},
+        			{"Top 50",50,4},
+        			{"Top 100",100,5}
+   		 }
+		)
