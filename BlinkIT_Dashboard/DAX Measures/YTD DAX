@@ -1,0 +1,116 @@
+AUTO_DATE = DATATABLE("OPTIONS",STRING,{{"⬤"}})
+
+YTDMonth = 
+            var SysMonth =  MONTH([System_Date])
+            var SelectYTDMonth = SELECTEDVALUE(Manual_Calender[MonthIndex])
+            RETURN if(ISFILTERED(AUTO_DATE[OPTIONS]),SysMonth,SelectYTDMonth)
+
+Selected_Period = SELECTEDVALUE(Time_Period[Value]) 
+
+#################---SALES YTD DAX---##############################
+
+Value = SUM(Master_Table[Value])
+
+YTD = 
+    var YTDSysMonth = [YTDMonth] 
+    RETURN CALCULATE([Value],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Value = 
+            var selected_Period = [Selected_Period] --3
+                var  selectedMonth = [YTDMonth] --11
+                var startindex = selectedMonth - selected_Period
+            var Period_Value = CALCULATE([Value],'Calendar'[MonthIndex]>=startindex, 'Calendar'[MonthIndex]<selectedMonth)          
+            RETURN if(selected_Period=0,[YTD],Period_Value) 
+
+
+
+#################---ORDER YTD DAX---##############################
+
+
+
+Order_ID_Count = DISTINCTCOUNT(Master_Table[order_id])
+
+YTD_Orders = var YTDSysMonth = [YTDMonth] 
+            RETURN CALCULATE([Order_ID_Count],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Orders = 
+            var selected_Period = [Selected_Period] --3
+                var selectedMonth = [YTDMonth] --11
+                var startindex = selectedMonth - selected_Period
+            var Period_Value = CALCULATE([Order_ID_Count],'Calendar'[MonthIndex]>=startindex,'Calendar'[MonthIndex]<selectedMonth)
+            RETURN if(selected_Period=0,[YTD_Orders],Period_Value)
+
+#################---CUSTOMER YTD DAX---##############################
+
+Total_Customer_Count = DISTINCTCOUNT(Master_Table[customer_id])
+
+YTD_Customer_Count = 
+                var YTDSysMonth = [YTDMonth] 
+                RETURN CALCULATE([Total_Customer_Count],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Customers = 
+                var selected_Period = [Selected_Period] --3
+                              var  selectedMonth = [YTDMonth] --11
+                              var startindex = selectedMonth - selected_Period
+                var Period_Value = CALCULATE([Total_Customer_Count],'Calendar'[MonthIndex]>=startindex,'Calendar'[MonthIndex]<selectedMonth)
+                RETURN if(selected_Period=0,[YTD_Customer_Count],Period_Value)
+
+
+#################---FEEDBACK YTD DAX---##############################
+
+
+Total_Feedbacks = DISTINCTCOUNT(Master_Table[feedback_id])
+
+YTD_Feedbacks = 
+                var YTDSysMonth = [YTDMonth] 
+                RETURN CALCULATE([Total_Feedbacks],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Feedbacks = 
+                var selected_Period = [Selected_Period] --3
+                              var  selectedMonth = [YTDMonth] --11
+                              var startindex = selectedMonth - selected_Period
+                
+                var Period_Value = CALCULATE([Total_Feedbacks],'Calendar'[MonthIndex]>=startindex,
+                'Calendar'[MonthIndex]<selectedMonth)
+                RETURN if(selected_Period=0,[YTD_Feedbacks],Period_Value)
+
+
+#################---INVENTORY YTD DAX---##############################
+
+
+Inventory_Value = SUM(Inventory[Value])
+
+YTD_Inventory = 
+                var YTDSysMonth = [YTDMonth] 
+                RETURN CALCULATE([Inventory_Value],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Inventory_value = 
+                var selected_Period = [Selected_Period] --3
+                var  selectedMonth = [YTDMonth] --11
+                var startindex = selectedMonth - selected_Period
+
+                var Period_Value = CALCULATE([Inventory_Value],'Calendar'[MonthIndex]>=startindex,
+                'Calendar'[MonthIndex]<selectedMonth)
+
+                RETURN if(selected_Period=0,[YTD_Inventory],Period_Value)
+
+
+#################---MARKETING YTD DAX---##############################
+
+
+
+Marketing_Value = SUM(Marketing[Value])
+            
+YTD_Marketing = 
+                var YTDSysMonth = [YTDMonth] 
+                RETURN CALCULATE([Marketing_Value],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Marketing_value = 
+                    var selected_Period = [Selected_Period] --3
+                    var  selectedMonth = [YTDMonth] --11
+                    var startindex = selectedMonth - selected_Period
+
+                    var Period_Value = CALCULATE([Marketing_Value],'Calendar'[MonthIndex]>=startindex,
+                    'Calendar'[MonthIndex]<selectedMonth)
+
+                    RETURN if(selected_Period=0,[YTD_Marketing],Period_Value)

@@ -1,0 +1,21 @@
+Marketing_Value = SUM(Marketing[Value])
+
+YTDMonth = 
+            var SysMonth =  MONTH([System_Date])
+            var SelectYTDMonth = SELECTEDVALUE(Manual_Calender[MonthIndex])
+            RETURN if(ISFILTERED(AUTO_DATE[OPTIONS]),SysMonth,SelectYTDMonth)
+            
+YTD_Marketing = 
+        		var YTDSysMonth = [YTDMonth] 
+				RETURN CALCULATE([Marketing_Value],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Marketing_value = 
+        			var selected_Period = [Selected_Period] --3
+        			var  selectedMonth = [YTDMonth] --11
+        			var startindex = selectedMonth - selected_Period
+
+        			var Period_Value = CALCULATE([Marketing_Value],'Calendar'[MonthIndex]>=startindex,
+        			'Calendar'[MonthIndex]<selectedMonth)
+
+        			RETURN if(selected_Period=0,[YTD_Marketing],Period_Value) 
+				

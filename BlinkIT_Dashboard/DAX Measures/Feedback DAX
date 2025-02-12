@@ -1,0 +1,23 @@
+AUTO_DATE = DATATABLE("OPTIONS",STRING,{{"⬤"}})
+
+YTDMonth = 
+            var SysMonth =  MONTH([System_Date])
+            var SelectYTDMonth = SELECTEDVALUE(Manual_Calender[MonthIndex])
+            RETURN if(ISFILTERED(AUTO_DATE[OPTIONS]),SysMonth,SelectYTDMonth)
+
+Selected_Period = SELECTEDVALUE(Time_Period[Value]) 
+
+Total_Feedbacks = DISTINCTCOUNT(Master_Table[feedback_id])
+
+YTD_Feedbacks = 
+				var YTDSysMonth = [YTDMonth] 
+				RETURN CALCULATE([Total_Feedbacks],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Feedbacks = 
+				var selected_Period = [Selected_Period] --3
+				      		  var  selectedMonth = [YTDMonth] --11
+				      		  var startindex = selectedMonth - selected_Period
+				
+				var Period_Value = CALCULATE([Total_Feedbacks],'Calendar'[MonthIndex]>=startindex,
+				'Calendar'[MonthIndex]<selectedMonth)
+				RETURN if(selected_Period=0,[YTD_Feedbacks],Period_Value)

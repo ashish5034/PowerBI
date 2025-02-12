@@ -1,0 +1,24 @@
+
+Customer_Rank_Title = SELECTEDVALUE(Rank_Table[Option])&" Customers "& [Selected_Sale_or_Quantity]
+
+Area_Rnk_Tiltle = SELECTEDVALUE(Rank_Table[Option])&" Area by"& [Selected_Sale_or_Quantity]
+
+Order_Count_Label = "Customer Who Order More Than "&(Order_Filter_Table[Order_Filter_Table Value])&" Times"
+
+Product_Rnk_Tiltle = SELECTEDVALUE(Rank_Table[Option])&" Products "& [Selected_Sale_or_Quantity]
+
+Sale_And_CY_Year_Titles = [Selected_Timeperiod_Label]&" "&[Selected_Sale_or_Quantity]&" "&[Curr_Year]
+
+Sale_And_PY_Year_Titles = [Selected_Timeperiod_Label]&" "&[Selected_Sale_or_Quantity]&" "&[Pre_Year]
+
+Sale_Option_CY_Year_Title = SELECTEDVALUE(Value_Options[Value_Type])&" "&Configuration[Curr_Year]
+
+Sale_Option_PY_Year_Title = SELECTEDVALUE(Value_Options[Value_Type])&" "&Configuration[Pre_Year]
+
+Selected_Sale_or_Quantity = SELECTEDVALUE(Value_Options[Value_Type])
+
+Selected_Timeperiod_Label = SELECTEDVALUE(Time_Period[Options])
+
+Pos_Neg_Growth_BG_Color = if([CY_PY_Growth%]>=0,"Green","Red")
+
+Pos_Neg_Growth_txt_Color = if([CY_PY_Growth%]>0,"#035505","##DE6A73")

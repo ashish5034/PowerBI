@@ -1,0 +1,33 @@
+Inventory_Value = SUM(Inventory[Value])
+
+YTDMonth = 
+            var SysMonth =  MONTH([System_Date])
+            var SelectYTDMonth = SELECTEDVALUE(Manual_Calender[MonthIndex])
+            RETURN if(ISFILTERED(AUTO_DATE[OPTIONS]),SysMonth,SelectYTDMonth)
+            
+YTD_Inventory = 
+				var YTDSysMonth = [YTDMonth] 
+				RETURN CALCULATE([Inventory_Value],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Inventory_value = 
+        		var selected_Period = [Selected_Period] --3
+        		var  selectedMonth = [YTDMonth] --11
+        		var startindex = selectedMonth - selected_Period
+
+        		var Period_Value = CALCULATE([Inventory_Value],'Calendar'[MonthIndex]>=startindex,
+        		'Calendar'[MonthIndex]<selectedMonth)
+
+        		RETURN if(selected_Period=0,[YTD_Inventory],Period_Value) 
+
+
+Available_Stock = [Period_Inventory_value]-[Period_Value]
+
+Available_Stoke% = DIVIDE([Available_Stock],[Period_Inventory_value])
+
+stock_damaged = CALCULATE([Period_Inventory_value],Inventory[Stock_Type]="damaged_stock")
+
+Damaged_Stoke% = DIVIDE([stock_damaged],[Period_Inventory_value])
+       
+Stock_Movement% = DIVIDE([Period_Value],[Period_Inventory_value])
+
+stock_received = CALCULATE([Period_Inventory_value],Inventory[Stock_Type]="stock_received")

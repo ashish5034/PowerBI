@@ -1,0 +1,74 @@
+AUTO_DATE = DATATABLE("OPTIONS",STRING,{{"⬤"}})
+
+Calendar = 
+    ADDCOLUMNS(CALENDARAUTO(),
+    "Year",YEAR([Date]),
+    "Month",FORMAT([Date],"mmm"),
+    "Month-Yr",FORMAT([Date],"mmm-yy"),
+    "Day",FORMAT([Date],"ddd"),
+    "MonthIndex",MONTH([Date]),
+    "Quarter","Q"&QUARTER([Date]))
+
+Manual_Calender = 'Calendar'
+
+Date_Category_Selection = {
+    ("Month", NAMEOF('Calendar'[Month]), 0),
+    ("Month-Yr", NAMEOF('Calendar'[Month-Yr]), 1),
+    ("Quater", NAMEOF('Calendar'[Quarter]), 2),
+    ("Day", NAMEOF('Calendar'[Day]), 3)}
+
+System_Date = NOW()
+
+Curr_Month = 
+            VAR Default_Month = 1 
+            VAR Sys_Month = MONTH([System_Date])
+            RETURN
+                IF(
+                    ISFILTERED(AUTO_DATE[OPTIONS]),
+                    Sys_Month,
+                    Default_Month
+                )
+
+
+Curr_Year = ( var yr = 2025
+            var Sys_Yr = YEAR([System_Date])
+            RETURN if(ISFILTERED(AUTO_DATE[OPTIONS]),Sys_Yr,yr))
+
+Pre_Year = [Curr_Year] - 1
+
+Selected_AutoDate_Options = SELECTEDVALUE(AUTO_DATE[OPTIONS])
+
+Selected_Period = SELECTEDVALUE(Time_Period[Value])
+
+YTDMonth = 
+            var SysMonth =  MONTH([System_Date])
+            var SelectYTDMonth = SELECTEDVALUE(Manual_Calender[MonthIndex])
+            RETURN if(ISFILTERED(AUTO_DATE[OPTIONS]),SysMonth,SelectYTDMonth)
+
+
+
+Order_Filter_Table = GENERATESERIES(0, 10, 1)
+
+Order_Filter_Table Value = SELECTEDVALUE('Order_Filter_Table'[Order_Filter_Table])
+
+Rank_Table = 
+DATATABLE(
+    "Option",STRING,"Value",INTEGER,"Sort",INTEGER,
+    {
+        {"Default",0,0},
+        {"Top 5",5,1},
+        {"Top 10",10,2},
+        {"Top 20",20,3},
+        {"Top 50",50,4},
+        {"Top 100",100,5}
+    }
+)
+
+Value_Options = SUMMARIZE(Master_Table,Master_Table[Value_Type])
+
+Date_Category_Selection = {
+    ("Month", NAMEOF('Calendar'[Month]), 0),
+    ("Month-Yr", NAMEOF('Calendar'[Month-Yr]), 1),
+    ("Quater", NAMEOF('Calendar'[Quarter]), 2),
+    ("Day", NAMEOF('Calendar'[Day]), 3)
+}

@@ -1,0 +1,115 @@
+Selected_Period = SELECTEDVALUE([Value])
+
+YTDMonth = 
+            var SysMonth =  MONTH([System_Date])
+            var SelectYTDMonth = SELECTEDVALUE(Manual_Calender[MonthIndex])
+            RETURN if(ISFILTERED(AUTO_DATE[OPTIONS]),SysMonth,SelectYTDMonth)
+
+Total_Customer_Count = DISTINCTCOUNT(Master_Table[customer_id])
+
+YTD_Customer_Count = 
+				var YTDSysMonth = [YTDMonth] 
+				RETURN CALCULATE([Total_Customer_Count],'Calendar'[MonthIndex]<=YTDSysMonth)
+
+Period_Value = 
+			var selected_Period = [Selected_Period] --3
+        		var  selectedMonth = [YTDMonth] --11
+        		var startindex = selectedMonth - selected_Period
+			var Period_Value = CALCULATE([Value],'Calendar'[MonthIndex]>=startindex, 'Calendar'[MonthIndex]<selectedMonth)			
+			RETURN if(selected_Period=0,[YTD],Period_Value)	
+
+Period_Customers = 
+				var selected_Period = [Selected_Period] --3
+				      		  var  selectedMonth = [YTDMonth] --11
+				      		  var startindex = selectedMonth - selected_Period
+				var Period_Value = CALCULATE([Total_Customer_Count],'Calendar'[MonthIndex]>=startindex,'Calendar'[MonthIndex]<selectedMonth)
+				RETURN if(selected_Period=0,[YTD_Customer_Count],Period_Value)
+
+Period_Customers_CY = 
+				var cy = [Curr_Year]
+				RETURN CALCULATE([Period_Customers],'Calendar'[Year]=cy)
+								
+Period_Customers_PY = 
+				var py = [Pre_Year]
+				RETURN CALCULATE([Period_Customers],'Calendar'[Year]= py)
+
+Customer_Growth = 
+				var custcy = [Period_Customers_CY]
+				var custpy = [Period_Customers_PY]
+				RETURN DIVIDE(custcy-custpy,custpy)
+
+Previous_Year_Value = 
+			var Curryear = [Pre_Year]
+			RETURN CALCULATE([Period_Value],'Calendar'[Year]=Curryear)
+
+Current_Year_Value = 
+			var Curryear = [Curr_Year]
+			RETURN CALCULATE([Period_Value],'Calendar'[Year]=Curryear)
+
+Lost_Customers = 
+				var filtercustomers = FILTER(
+				    SUMMARIZE(Master_Table,Master_Table[customer_id]),
+				    [Previous_Year_Value]>0 && [Current_Year_Value]<=0
+				)
+				RETURN CALCULATE([Period_Customers],filtercustomers)
+
+New_Customers = 
+				var filtercustomers = FILTER(
+				    SUMMARIZE(Master_Table,Master_Table[customer_id]),
+				    [Previous_Year_Value]<=0 && [Current_Year_Value]>0
+				)
+				RETURN CALCULATE([Period_Customers],filtercustomers)
+
+Lost_Customers_Sale = 
+				var filtercustomers = FILTER(
+				    SUMMARIZE(Master_Table,Master_Table[customer_id]),
+				    [Previous_Year_Value]>0 && [Current_Year_Value]<=0
+				)
+				RETURN CALCULATE([Period_Value],filtercustomers)
+
+
+New_Customers_Sale = 
+				var filtercustomers = FILTER(
+				    SUMMARIZE(Master_Table,Master_Table[customer_id]),
+				    [Previous_Year_Value]<=0 && [Current_Year_Value]>0
+				)
+				RETURN CALCULATE([Period_Value],filtercustomers)				
+
+Repeat_Customers = 
+				var customerdata = SUMMARIZE(Master_Table, Master_Table[customer_id])
+				var filterobj = FILTER(customerdata,[Period_Orders]>=2)
+				RETURN CALCULATE([Period_Customers],filterobj)	
+
+Repeat_Customers_Dynamic = 
+				var order_count = MAX(Order_Filter_Table[Order_Filter_Table])
+				var customerdata = SUMMARIZE(Master_Table, Master_Table[customer_id])
+				var filterobj = FILTER(customerdata,[Period_Orders]>=order_count)
+				var val = CALCULATE([Period_Customers],filterobj)
+				RETURN if(ISBLANK(val),0,val)
+
+Repeat_Customers_Sale = 
+			var customerdata = SUMMARIZE(Master_Table, Master_Table[customer_id])
+			var filterobj = FILTER(customerdata,[Period_Orders]>=2)
+			RETURN CALCULATE([Period_Value],filterobj)
+
+Repeate_Customers_Count_CY = 
+				var cy = [Curr_Year]
+				RETURN  CALCULATE([Repeat_Customers],'Calendar'[Year]=cy)
+
+Repeate_Customers_Count_PY = 
+				var py = [Pre_Year]
+				RETURN  CALCULATE([Repeat_Customers],'Calendar'[Year]=py)
+
+Repeate_Customers_Sale_CY = 
+				var cy = [Curr_Year]
+				RETURN  CALCULATE([Repeat_Customers_Sale],'Calendar'[Year]=cy)
+
+Repeate_Customers_Sale_PY = 
+				var py = [Pre_Year]
+				RETURN  CALCULATE([Repeat_Customers_Sale],'Calendar'[Year]=py)		
+
+TopN_Customer_by_Value = 
+				var Rankvalue =  RANKX(ALL(Master_Table[customer_name]),[Period_Value],,DESC)
+				var _rank = SELECTEDVALUE(Rank_Table[Value])
+				var rank_topN_Value =  IF(Rankvalue<=_rank,[Period_Value],BLANK())
+				RETURN IF(_rank = 0,[Period_Value],rank_topN_Value)	
